@@ -23,24 +23,28 @@ def extract_zip(zip_path: str | Path, dest_dir: str | Path) -> Path:
     return dest
 
 
-def iter_python_files(root: Path) -> Generator[tuple[Path, str], None, None]:
-    """Yield (relative_path, content) for each .py file under root."""
-    for path in root.rglob("*.py"):
-        try:
-            content = path.read_text(encoding="utf-8", errors="replace")
-            rel = path.relative_to(root)
-            yield rel, content
-        except Exception:
-            continue
+SUPPORTED_EXTENSIONS = {".py", ".java", ".js", ".ts", ".cs", ".kt"}
 
 
-def get_python_files_from_zip(zip_path: str | Path) -> list[tuple[str, str]]:
+def iter_test_files(root: Path) -> Generator[tuple[Path, str], None, None]:
+    """Yield (relative_path, content) for each supported test file under root."""
+    for path in root.rglob("*"):
+        if path.suffix in SUPPORTED_EXTENSIONS:
+            try:
+                content = path.read_text(encoding="utf-8", errors="replace")
+                rel = path.relative_to(root)
+                yield rel, content
+            except Exception:
+                continue
+
+
+def get_files_from_zip(zip_path: str | Path) -> list[tuple[str, str]]:
     """
-    Extract ZIP to a temp directory, collect all .py (path_str, content), then cleanup.
+    Extract ZIP to a temp directory, collect all supported files (path_str, content), then cleanup.
     Returns list of (relative_path_str, source_code).
     """
-    import tempfile
     import shutil
+    import tempfile
 
     zip_path = Path(zip_path)
     if not zip_path.is_file():
@@ -49,6 +53,8 @@ def get_python_files_from_zip(zip_path: str | Path) -> list[tuple[str, str]]:
     tmp = Path(tempfile.mkdtemp(prefix="selenium_zip_"))
     try:
         extract_zip(zip_path, tmp)
-        return [(str(rel), content) for rel, content in iter_python_files(tmp)]
+        return [(str(rel), content) for rel, content in iter_test_files(tmp)]
     finally:
+        # We don't cleanup yet if we need to detect language first? 
+        # Actually, let's keep it simple: extract twice or extract once in the worker.
         shutil.rmtree(tmp, ignore_errors=True)

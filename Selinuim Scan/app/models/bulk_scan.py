@@ -11,6 +11,7 @@ class BulkScan(Base):
     original_filename: Mapped[str] = mapped_column(String(255), nullable=False)
     storage_path: Mapped[str | None] = mapped_column(String(512), nullable=True, index=True)
     status: Mapped[str] = mapped_column(String(32), default="pending", index=True)
+    detected_language: Mapped[str | None] = mapped_column(String(32), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
