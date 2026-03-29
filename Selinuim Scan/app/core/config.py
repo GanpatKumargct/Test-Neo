@@ -40,6 +40,14 @@ class Settings(BaseSettings):
     # CORS
     cors_origins: List[AnyHttpUrl] = []
 
+    # AI / LLM
+    openai_api_key: Optional[str] = None
+    openai_model: str = "gpt-4o"
+    gemini_api_key: Optional[str] = None
+    gemini_model: str = "gemini-2.5-flash"
+    groq_api_key: Optional[str] = None
+    groq_model: str = "llama-3.3-70b-versatile"
+
     # Observability (stubs)
     sentry_dsn: Optional[str] = None
 
