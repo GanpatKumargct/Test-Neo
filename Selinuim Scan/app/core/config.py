@@ -47,6 +47,9 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-2.5-flash"
     groq_api_key: Optional[str] = None
     groq_model: str = "llama-3.3-70b-versatile"
+    ollama_base_url: str = "http://localhost:11434/v1"
+    ollama_api_key: str = "ollama"
+    ollama_model: str = "deepseek-v3.2:cloud"
 
     # Observability (stubs)
     sentry_dsn: Optional[str] = None
