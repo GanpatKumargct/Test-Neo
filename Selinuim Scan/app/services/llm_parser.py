@@ -13,33 +13,35 @@ from .base_parser import BaseParser
 
 class LLMParser(BaseParser):
     def __init__(self):
-        # Initialize OpenAI client for Ollama
-        base_url = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434/v1")
-        api_key = os.environ.get("OLLAMA_API_KEY", "ollama")
+        # Initialize OpenAI client for Groq
+        base_url = "https://api.groq.com/openai/v1"
+        api_key = settings.groq_api_key
         self.client = OpenAI(base_url=base_url, api_key=api_key, max_retries=0)
-        self.model_name = os.environ.get("OLLAMA_MODEL", "deepseek-v3.2:cloud")
+        self.model_name = settings.groq_model
 
-    def parse(self, source: str) -> list[dict[str, Any]]:
+    def parse(self, source: str) -> str:
         """
-        Parse source code (any language) and return a list of Selenium step dicts.
+        Parse source code (any language) and return the NLP steps as string.
         """
         if not self.client:
             logging.error("OpenAI client is not configured.")
             return []
 
         system_prompt = (
-            "You are an expert software reverse engineer and tester. The user will provide you with the source code of a Selenium test script in any programming language (Python, Java, JS, C#, Ruby, Kotlin, etc.). "
-            "Your task is to extract all the Selenium actions performed in the script and output them as a JSON object.\n\n"
-            'The JSON object MUST contain a single key "steps", which is an array of dictionaries.\n'
-            "Each dictionary must have exactly this scheme format, and NO OTHER KEYS unless specified:\n"
-            '- `action` (string, required): One of: `get`, `click`, `send_keys`, `clear`, `launch_browser`, `switch_frame`, `wait_presence`, `wait_clickable`, `get_attribute`, `submit`, `close`, `quit`, `sleep`.\n'
-            '- `by` (string, optional): The locator strategy used (e.g. `id`, `xpath`, `name`, `css selector`, `class name`). Keep it lowercase.\n'
-            '- `value` (string, optional): The value of the locator (e.g. `//div[@id="submit"]`). Or wait time for sleep.\n'
-            '- `url` (string, optional): The URL navigated to for `get` action.\n'
-            '- `text` (string, optional): The text typed for `send_keys` action.\n'
-            '- `browser` (string, optional): The browser name for `launch_browser` action (e.g. `Chrome`, `Firefox`).\n\n'
-            'Do your best to infer the `by` and `value` for clicks and waits. '
-            'Return ONLY the JSON object.'
+            "You are an expert test automation engineer.\n"
+            "Task: Convert the given Selenium/Java/Python code into detailed NLP test steps.\n"
+            "Strict Rules:\n"
+            "1. Do NOT skip any step\n"
+            "2. Expand loops into individual steps\n"
+            "3. Include:\n"
+            "   - clicks\n"
+            "   - inputs\n"
+            "   - waits\n"
+            "   - conditions\n"
+            "   - data extraction\n"
+            "4. Keep steps in exact execution order\n"
+            "5. Output only numbered steps\n"
+            "6. Be explicit and human-readable"
         )
 
         import time
@@ -50,16 +52,14 @@ class LLMParser(BaseParser):
                     model=self.model_name,
                     messages=[
                         {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": f"Extract Selenium steps from this code:\n\n{source}"}
+                        {"role": "user", "content": f"Code:\n{source}"}
                     ],
-                    response_format={"type": "json_object"}, 
                     temperature=0.0
                 )
                 content = response.choices[0].message.content
                 if not content:
-                    return []
-                data = json.loads(content)
-                return data.get("steps", [])
+                    return ""
+                return content
             except openai.RateLimitError as e:
                 if attempt < 2:
                     logging.warning(f"Rate limited by API. Waiting 10 seconds... (Attempt {attempt+1}/3)")
@@ -69,5 +69,5 @@ class LLMParser(BaseParser):
                     return []
             except Exception as e:
                 logging.error(f"LLM Parsing failed: {e}")
-                return []
-        return []
+                return ""
+        return ""

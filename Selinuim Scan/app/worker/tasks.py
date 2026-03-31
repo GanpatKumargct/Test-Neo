@@ -61,7 +61,10 @@ def run_bulk_conversion(self, bulk_scan_id: int) -> None:
             parser = LLMParser()
             steps = parser.parse(source)
             title = Path(rel_path).stem.replace("_", " ").title()
-            testneo_content = steps_to_testneo(steps, title=title)
+            if isinstance(steps, str):
+                testneo_content = f"# {title}\n\n{steps}"
+            else:
+                testneo_content = steps_to_testneo(steps, title=title)
             generated.append((rel_path, testneo_content))
         except Exception as e:
             errors.append(f"{rel_path}: {e!s}")
