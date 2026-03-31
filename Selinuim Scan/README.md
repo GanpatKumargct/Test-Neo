@@ -7,7 +7,9 @@ Backend service for bulk-converting Selenium-based UI tests into TestNeo-style N
 - **API**: FastAPI (+ Uvicorn / Gunicorn)
 - **DB**: PostgreSQL via SQLAlchemy 2.0 (+ Alembic for migrations)
 - **Async**: Celery + Redis
-- **Parsing**: Python AST + rule-based TestNeo generator
+- **Parsing**: LLM-powered engine (Groq via OpenAI SDK)
+
+For an in-depth explanation of the project architecture and flow, see [PROJECT_DETAILS.md](PROJECT_DETAILS.md).
 
 ## Where things run: Docker vs localhost
 
@@ -90,11 +92,10 @@ Docs: **http://localhost:8000/api/v1/docs**
 
 ## Conversion Pipeline
 
-1. **Upload**: ZIP is saved under `uploads/{scan_id}.zip` and a Celery task is enqueued.
-2. **Worker**: Extracts the ZIP, discovers all `.py` files, parses each with Python AST.
-3. **AST parser**: Detects Selenium patterns (`driver.get()`, `find_element(By.*, ...)`, `.click()`, `.send_keys()`, `.clear()`, etc.) and builds an ordered list of steps.
-4. **TestNeo generator**: Converts steps into natural-language TestNeo format (e.g. “Step 1: Open URL …”, “Step 2: Click on element (id: …)”).
-5. **Persistence**: Each converted file is stored as a `GeneratedTest` row; `ConversionLog` entries record errors/info; `BulkScan.status` is set to `completed` or `failed`.
+1. **Upload**: Uploaded ZIP is saved under `uploads/{scan_id}.zip` and a Celery task is enqueued.
+2. **Worker**: Extracts the ZIP and discovers relevant test files.
+3. **LLM Engine**: Each file's code is pushed to a configured LLM (Groq / LLaMa) which interprets the testing framework steps, accounts for interactions/loops, and directly synthesizes the natural-language instructions.
+4. **Persistence**: Each converted file is stored as a `GeneratedTest` row; `ConversionLog` entries record errors/info; `BulkScan.status` is set to `completed` or `failed`.
 
 ## High-Level Architecture
 
