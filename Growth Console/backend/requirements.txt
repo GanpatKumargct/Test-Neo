@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+pydantic
+pydantic-settings
+sqlalchemy
+psycopg2-binary
+alembic
+groq
+langgraph
+langchain-core
+langchain-groq
+beautifulsoup4
+requests
+python-dotenv
